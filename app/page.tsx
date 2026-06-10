@@ -1,271 +1,242 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Phone,
-  CheckCircle2,
-  Clock,
-  Calendar,
-  User,
-  MapPin,
-  Briefcase,
-} from "lucide-react";
-import {
-  ViewState,
-  Service,
-  Booking,
-  BookingStatus,
-  ToastNotification,
-} from "@/types";
-import { SERVICES, INITIAL_BOOKINGS } from "@/lib/data";
+import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { ServiceCard } from "@/components/guest/ServiceCard";
 import { BookingWizard } from "@/components/guest/BookingWizard";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { BookingsTable } from "@/components/dashboard/BookingsTable";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/utils/apiClient";
 
-export default function Home() {
-  const [view, setView] = useState<ViewState>("guest");
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+import { SERVICES as MOCK_SERVICES, INITIAL_BOOKINGS } from "@/lib/data";
+import { Service, Booking, BookingStatus } from "@/types";
+import { X, AlertCircle } from "lucide-react";
+
+export default function HomePage() {
+  const { user, isLoading: isAuthLoading, login } = useAuth();
+
+  const [services, setServices] = useState<Service[]>(MOCK_SERVICES);
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-  const [toast, setToast] = useState<ToastNotification | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(false);
 
-  // --- Actions ---
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-  const handleBookService = (service: Service) => {
-    setSelectedService(service);
-    setView("guest-booking");
-  };
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
 
-  const handleBookingComplete = (newBookingData: Partial<Booking>) => {
-    const newBooking: Booking = {
-      id: bookings.length + 1,
-      serviceId: newBookingData.serviceId!,
-      masterId: newBookingData.masterId!,
-      date: newBookingData.date!,
-      time: newBookingData.time!,
-      client: newBookingData.client!,
-      phone: newBookingData.phone,
-      address: newBookingData.address,
-      status: "pending",
-    };
+  useEffect(() => {
+    async function loadData() {
+      setIsDataLoading(true);
+      try {
+        const apiServices = await apiClient<Service[]>("/api/services");
+        if (apiServices && apiServices.length > 0) {
+          setServices(apiServices);
+        }
 
-    setBookings((prev) => [...prev, newBooking]);
-    setView("guest");
-    showToast(
-      "Ваш запит успішно надіслано! Очікуйте підтвердження.",
-      "success"
-    );
-  };
+        if (user && (user.role === "Admin" || user.role === "Master")) {
+          const apiBookings = await apiClient<Booking[]>("/api/bookings");
+          if (apiBookings) {
+            setBookings(apiBookings);
+          }
+        }
+      } catch {
+        console.warn("Бекенд на порту 5268 недоступний. Автоматично активовано автономний Demo-режим.");
+      } finally {
+        setIsDataLoading(false);
+      }
+    }
 
-  const handleStatusChange = (id: number, newStatus: BookingStatus) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
-    );
-    showToast(`Статус замовлення #${id} змінено на ${newStatus}`, "info");
-  };
+    if (!isAuthLoading) {
+      loadData();
+    }
+  }, [user, isAuthLoading]);
 
-  const showToast = (message: string, type: ToastNotification["type"]) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // --- Render Content ---
-
-  const renderContent = () => {
-    switch (view) {
-      case "guest":
-        return (
-          <div className="space-y-12 animate-in fade-in duration-500">
-            <div className="text-center max-w-2xl mx-auto space-y-4">
-              <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                Сантехніка та Монтаж{" "}
-                <span className="text-blue-600">Farro</span>
-              </h1>
-              <p className="text-lg text-slate-600">
-                Професійні послуги майстрів. Обирайте послугу, бронюйте зручний
-                час, а ми подбаємо про якість.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {SERVICES.map((s) => (
-                <ServiceCard
-                  key={s.id}
-                  service={s}
-                  onSelect={handleBookService}
-                />
-              ))}
-            </div>
-
-            <div className="bg-slate-900 rounded-3xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-              <div className="relative z-10">
-                <h2 className="text-2xl font-bold mb-2">
-                  Не знайшли потрібну послугу?
-                </h2>
-                <p className="text-slate-400">
-                  Зателефонуйте нам для індивідуального прорахунку
-                </p>
-              </div>
-              <button className="mt-6 md:mt-0 bg-white text-slate-900 px-6 py-3 rounded-xl font-bold hover:bg-slate-100 transition-colors z-10 flex items-center gap-2">
-                <Phone className="w-5 h-5" /> +380 44 123 4567
-              </button>
-              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-600 rounded-full blur-3xl opacity-20"></div>
-            </div>
-          </div>
-        );
-
-      case "guest-booking":
-        if (!selectedService) return null;
-        return (
-          <BookingWizard
-            service={selectedService}
-            bookings={bookings}
-            onBack={() => setView("guest")}
-            onComplete={handleBookingComplete}
-          />
-        );
-
-      case "master":
-        const myBookings = bookings
-          .filter((b) => b.masterId === 101)
-          .sort((a, b) => a.date.localeCompare(b.date));
-        return (
-          <DashboardLayout title="Мій Розклад" role="Майстер (О. Петренко)">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-4">
-                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" /> Найближчі
-                  завдання
-                </h3>
-                {myBookings.length === 0 ? (
-                  <p className="text-slate-500 italic">
-                    На сьогодні завдань немає
-                  </p>
-                ) : (
-                  myBookings.map((b) => (
-                    <div
-                      key={b.id}
-                      className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-start gap-4"
-                    >
-                      <div className="bg-slate-50 p-3 rounded-lg text-center min-w-20">
-                        <div className="font-bold text-slate-900 text-lg">
-                          {b.time}
-                        </div>
-                        <div className="text-xs text-slate-500">{b.date}</div>
-                      </div>
-                      <div className="grow">
-                        <h4 className="font-bold text-slate-900">
-                          {SERVICES.find((s) => s.id === b.serviceId)?.title}
-                        </h4>
-                        <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                          <User className="w-3 h-3" /> {b.client}
-                        </p>
-                        <p className="text-sm text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />{" "}
-                          {b.address || "Адреса не вказана"}
-                        </p>
-                      </div>
-                      <Badge status={b.status} />
-                    </div>
-                  ))
-                )}
-              </div>
-              <div>
-                <Card className="p-6 sticky top-24">
-                  <h3 className="font-bold text-slate-900 mb-4">Статистика</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500">Виконано за місяць</span>
-                      <span className="font-bold text-slate-900">12</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500">Рейтинг</span>
-                      <span className="font-bold text-yellow-600 flex items-center gap-1">
-                        ★ 4.9
-                      </span>
-                    </div>
-                    <div className="pt-4 border-t border-slate-100">
-                      <button className="w-full bg-slate-100 text-slate-700 py-2 rounded-lg font-medium hover:bg-slate-200">
-                        Повідомити про проблему
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </DashboardLayout>
-        );
-
-      case "admin":
-        const adminBookings = [...bookings].sort((a) =>
-          a.status === "pending" ? -1 : 1
-        );
-        return (
-          <DashboardLayout title="Панель Адміністратора" role="Головний Адмін">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card className="p-5 flex items-center gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-slate-900">
-                    {bookings.length}
-                  </div>
-                  <div className="text-xs text-slate-500 font-medium uppercase">
-                    Всього заявок
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-5 flex items-center gap-4">
-                <div className="p-3 bg-yellow-50 text-yellow-600 rounded-lg">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-slate-900">
-                    {bookings.filter((b) => b.status === "pending").length}
-                  </div>
-                  <div className="text-xs text-slate-500 font-medium uppercase">
-                    Очікують
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            <h3 className="font-bold text-lg text-slate-800 mb-4">
-              Журнал бронювань
-            </h3>
-            <BookingsTable
-              bookings={adminBookings}
-              onAction={handleStatusChange}
-            />
-          </DashboardLayout>
-        );
-
-      default:
-        return null;
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      await login({ email, password });
+      setShowLoginModal(false);
+    } catch (error) {
+      setAuthError(`Невірний email або пароль: ${error}`);
     }
   };
 
+  const handleBookingComplete = async (data: Partial<Booking>) => {
+    try {
+      const b = {
+        dto: {
+          serviceId: data.serviceId,
+          masterId: data.masterId,
+          date: data.date,
+          time: data.time,
+          clientName: data.client,
+          phone: data.phone,
+          address: data.address,
+        },
+      };
+      console.log(b);
+
+      // Надсилаємо POST запит до нашого BookingsController в ASP.NET
+      const newBooking = await apiClient<Booking>("/api/bookings/create", {
+        method: "POST",
+        body: JSON.stringify(b),
+      });
+
+
+      if (newBooking) {
+        setBookings((prev) => [...prev, newBooking]);
+        alert("Запис успішно створено та внесено до бази даних PostgreSQL!");
+      }
+    } catch (err) {
+      console.error("Помилка відправки запису на сервер:", err);
+      alert("Сталася помилка при збереженні запису в базу даних.");
+    } finally {
+      setSelectedService(null);
+    }
+  };
+
+  const handleAdminAction = async (id: number, status: BookingStatus) => {
+    try {
+      await apiClient(`/api/bookings/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    } catch (err) {
+      console.error("Не вдалося оновити статус на сервері:", err);
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    }
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
-      <Navbar currentView={view} onViewChange={setView} />
+    <div className="min-h-screen bg-slate-50 font-sans">
+      <Navbar onLoginClick={() => setShowLoginModal(true)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderContent()}
+        {/* Індикатор синхронізації з хмарною БД */}
+        {isDataLoading && (
+          <div className="text-xs text-blue-600 animate-pulse mb-4 flex items-center gap-1">
+            <span className="w-2 h-2 bg-blue-600 rounded-full inline-block" /> Синхронізація з FarroService API...
+          </div>
+        )}
+
+        {/* === ПАНЕЛЬ АДМІНІСТРАТОРА === */}
+        {user?.role === "Admin" && (
+          <DashboardLayout title="Всі записи" role="Адміністратор">
+            <BookingsTable bookings={bookings} onAction={handleAdminAction} />
+          </DashboardLayout>
+        )}
+
+        {/* === ПАНЕЛЬ МАЙСТРА === */}
+        {user?.role === "Master" && (
+          <DashboardLayout title="Мій розклад" role="Майстер">
+            <BookingsTable bookings={bookings} onAction={handleAdminAction} />
+          </DashboardLayout>
+        )}
+
+        {/* === ІНТЕРФЕЙС ГОСТЯ === */}
+        {(!user || user.role === "Guest") && (
+          <>
+            {selectedService ? (
+              <BookingWizard
+                service={selectedService}
+                bookings={bookings}
+                onBack={() => setSelectedService(null)}
+                onComplete={handleBookingComplete}
+              />
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-slate-900">Послуги</h1>
+                  <p className="text-slate-500 mt-2">Оберіть послугу для бронювання майстра</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {services.map((s) => (
+                    <ServiceCard key={s.id} service={s} onSelect={setSelectedService} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </main>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 z-50">
-          {toast.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 text-green-400" />
-          ) : (
-            <Clock className="w-5 h-5 text-blue-400" />
-          )}
-          <p className="font-medium">{toast.message}</p>
+      {/* === МОДАЛЬНЕ ВІКНО АВТЕНТИФІКАЦІЇ === */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-slate-900 text-white p-6 relative">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold mb-1">Авторизація</h2>
+              <p className="text-slate-400 text-sm flex items-center gap-2">Вхід до системи для співробітників</p>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="p-6 space-y-5">
+              {authError && (
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  {authError}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="login-email"
+                  required
+                  type="email"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@farro.ua"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">
+                  Пароль
+                </label>
+                <input
+                  id="login-password"
+                  required
+                  type="password"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center cursor-pointer"
+                >
+                  Увійти до панелі
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

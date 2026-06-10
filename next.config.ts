@@ -1,8 +1,17 @@
-const ip = process.env.IP_ADDRESS;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: [ip],
+  allowedDevOrigins: [BASE_URL, "localhost:3000"],
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:5268/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
