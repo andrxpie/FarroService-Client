@@ -1,34 +1,20 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { authService, LoginDto, RegisterDto } from "@/services/authService";
-
-interface UserContextType {
-  email: string;
-  role: string;
-  fullName: string;
-}
-
-interface AuthContextType {
-  user: UserContextType | null;
-  isLoading: boolean;
-  login: (dto: LoginDto) => Promise<void>;
-  register: (dto: RegisterDto) => Promise<void>;
-  logout: () => void;
-}
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { authService } from "@/services/authService";
+import type { AuthUser, AuthContextType, LoginDto, RegisterDto } from "@/types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserContextType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setIsLoading(false);
+    void (async () => {
+      await Promise.resolve();
+      setUser(authService.getCurrentUser());
+    })();
   }, []);
 
   const login = async (dto: LoginDto) => {
@@ -56,7 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>;
+  const value = useMemo(() => ({ user, isLoading, login, register, logout }), [user, isLoading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -1,39 +1,26 @@
-// Суворо прив'язуємося до твого робочого HTTP порту
-const BASE_URL = "";
+interface FetchOptions extends RequestInit {
+  next?: { revalidate?: number | false; tags?: string[] };
+}
 
-export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const token = globalThis.window === undefined ? null : localStorage.getItem("farro_token");
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  const response = await fetch(endpoint, { ...options, headers });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(errorText || `Помилка сервера: ${response.status}`);
   }
 
-  const fullUrl = `${BASE_URL}${endpoint}`;
-
-  try {
-    console.log()
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Помилка сервера: ${response.status}`);
-    }
-
-    if (response.status === 204) {
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`[FarroAPI Error] Критична помилка мережі для: ${fullUrl}`, error);
-    throw error;
+  if (response.status === 204) {
+    return undefined as T;
   }
+
+  return response.json() as Promise<T>;
 }

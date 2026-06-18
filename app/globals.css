@@ -10,6 +10,26 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand palette — використовуй як bg-primary, text-primary тощо */
+  --color-primary: #2563eb; /* blue-600 */
+  --color-primary-dark: #1d4ed8; /* blue-700 */
+  --color-primary-light: #eff6ff; /* blue-50  */
+
+  --color-surface: #f8fafc; /* slate-50  */
+  --color-surface-hover: #f1f5f9; /* slate-100 */
+  --color-border: #e2e8f0; /* slate-200 */
+
+  --color-text: #0f172a; /* slate-900 */
+  --color-text-muted: #64748b; /* slate-500 */
+  --color-text-subtle: #94a3b8; /* slate-400 */
+
+  --color-success: #16a34a; /* green-600 */
+  --color-success-bg: #f0fdf4; /* green-50  */
+  --color-warning: #b45309; /* amber-700 */
+  --color-warning-bg: #fefce8; /* yellow-50 */
+  --color-error: #dc2626; /* red-600   */
+  --color-error-bg: #fef2f2; /* red-50    */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +43,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 text-white px-8 py-3 rounded-xl font-bold
+           hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 cursor-pointer;
+  }
+
+  .btn-secondary {
+    @apply bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg
+           text-sm font-medium hover:bg-slate-50 transition-colors cursor-pointer;
+  }
+
+  .btn-ghost {
+    @apply text-slate-600 font-medium hover:text-slate-900 transition-colors cursor-pointer;
+  }
+
+  .input-base {
+    @apply w-full p-3 border border-slate-300 rounded-lg text-slate-900 bg-white
+           outline-none focus:ring-2 focus:ring-blue-500 transition-shadow;
+  }
+
+  .card-base {
+    @apply bg-white rounded-xl shadow-sm border border-slate-200;
+  }
 }

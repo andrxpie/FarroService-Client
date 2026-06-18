@@ -6,11 +6,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  title,
-  children,
-  role,
-}) => (
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ title, children, role }) => (
   <div className="space-y-6">
     <div className="flex items-center justify-between pb-6 border-b border-slate-200">
       <div>
@@ -21,9 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <button className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
           Експорт
         </button>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-          Налаштування
-        </button>
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Налаштування</button>
       </div>
     </div>
     {children}

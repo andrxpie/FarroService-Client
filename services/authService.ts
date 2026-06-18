@@ -1,22 +1,16 @@
 import { apiClient } from "@/utils/apiClient";
+import type { LoginDto, RegisterDto, AuthResponse } from "@/types";
 
-export interface LoginDto {
-  email: string;
-  password: string;
-}
-
-export interface RegisterDto {
-  email: string;
-  password: string;
-  fullName: string;
-  masterSpecialization?: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  email: string;
-  role: string;
-  fullName: string;
+function saveSession(data: AuthResponse): void {
+  localStorage.setItem("farro_token", data.token);
+  localStorage.setItem(
+    "farro_user",
+    JSON.stringify({
+      email: data.email,
+      role: data.role,
+      fullName: data.fullName,
+    }),
+  );
 }
 
 export const authService = {
@@ -25,18 +19,7 @@ export const authService = {
       method: "POST",
       body: JSON.stringify(dto),
     });
-
-    if (data.token) {
-      localStorage.setItem("farro_token", data.token);
-      localStorage.setItem(
-        "farro_user",
-        JSON.stringify({
-          email: data.email,
-          role: data.role,
-          fullName: data.fullName,
-        }),
-      );
-    }
+    saveSession(data);
     return data;
   },
 
@@ -45,18 +28,7 @@ export const authService = {
       method: "POST",
       body: JSON.stringify(dto),
     });
-
-    if (data.token) {
-      localStorage.setItem("farro_token", data.token);
-      localStorage.setItem(
-        "farro_user",
-        JSON.stringify({
-          email: data.email,
-          role: data.role,
-          fullName: data.fullName,
-        }),
-      );
-    }
+    saveSession(data);
     return data;
   },
 
@@ -66,7 +38,7 @@ export const authService = {
   },
 
   getCurrentUser() {
-    if (typeof window === "undefined") return null;
+    if (globalThis.window === undefined) return null;
     const userJson = localStorage.getItem("farro_user");
     return userJson ? JSON.parse(userJson) : null;
   },

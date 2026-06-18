@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { ServiceCard } from "@/components/guest/ServiceCard";
 import { BookingWizard } from "@/components/guest/BookingWizard";
@@ -9,15 +9,14 @@ import { BookingsTable } from "@/components/dashboard/BookingsTable";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/utils/apiClient";
 
-import { SERVICES as MOCK_SERVICES, INITIAL_BOOKINGS } from "@/lib/data";
-import { Service, Booking, BookingStatus } from "@/types";
+import { Service, Booking, BookingStatus, CreateBookingPayload } from "@/types";
 import { X, AlertCircle } from "lucide-react";
 
 export default function HomePage() {
   const { user, isLoading: isAuthLoading, login } = useAuth();
 
-  const [services, setServices] = useState<Service[]>(MOCK_SERVICES);
-  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+  const [services, setServices] = useState<Service[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(false);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -35,18 +34,23 @@ export default function HomePage() {
         if (apiServices && apiServices.length > 0) {
           setServices(apiServices);
         }
+      } catch {
+        console.warn("Бекенд недоступний. Активовано Demo-режим.");
+      }
 
-        if (user && (user.role === "Admin" || user.role === "Master")) {
-          const apiBookings = await apiClient<Booking[]>("/api/bookings");
+      if (user?.role === "Admin" || user?.role === "Master") {
+        const bookingsEndpoint = user.role === "Admin" ? "/api/bookings" : "/api/bookings/my";
+        try {
+          const apiBookings = await apiClient<Booking[]>(bookingsEndpoint);
           if (apiBookings) {
             setBookings(apiBookings);
           }
+        } catch (err) {
+          console.warn("Не вдалося завантажити записи:", err);
         }
-      } catch {
-        console.warn("Бекенд на порту 5268 недоступний. Автоматично активовано автономний Demo-режим.");
-      } finally {
-        setIsDataLoading(false);
       }
+
+      setIsDataLoading(false);
     }
 
     if (!isAuthLoading) {
@@ -54,61 +58,54 @@ export default function HomePage() {
     }
   }, [user, isAuthLoading]);
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setAuthError("");
     try {
       await login({ email, password });
       setShowLoginModal(false);
     } catch (error) {
-      setAuthError(`Невірний email або пароль: ${error}`);
+      setAuthError(error instanceof Error ? error.message : "Невірний email або пароль.");
     }
   };
 
-  const handleBookingComplete = async (data: Partial<Booking>) => {
+  const handleBookingComplete = async (data: CreateBookingPayload) => {
     try {
-      const b = {
-        dto: {
+      const newBooking = await apiClient<Booking>("/api/bookings/book", {
+        method: "POST",
+        body: JSON.stringify({
+          clientName: data.clientName,
+          phone: data.phone,
           serviceId: data.serviceId,
           masterId: data.masterId,
           date: data.date,
-          time: data.time,
-          clientName: data.client,
-          phone: data.phone,
+          startTime: data.startTime,
           address: data.address,
-        },
-      };
-      console.log(b);
-
-      // Надсилаємо POST запит до нашого BookingsController в ASP.NET
-      const newBooking = await apiClient<Booking>("/api/bookings/create", {
-        method: "POST",
-        body: JSON.stringify(b),
+          comment: data.comment ?? null,
+        }),
       });
-
 
       if (newBooking) {
         setBookings((prev) => [...prev, newBooking]);
-        alert("Запис успішно створено та внесено до бази даних PostgreSQL!");
+        alert("Запис успішно створено!");
       }
     } catch (err) {
       console.error("Помилка відправки запису на сервер:", err);
-      alert("Сталася помилка при збереженні запису в базу даних.");
+      alert("Сталася помилка при збереженні запису.");
     } finally {
       setSelectedService(null);
     }
   };
 
-  const handleAdminAction = async (id: number, status: BookingStatus) => {
+  const handleAdminAction = async (id: string, status: BookingStatus) => {
     try {
       await apiClient(`/api/bookings/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status }),
       });
-
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
     } catch (err) {
       console.error("Не вдалося оновити статус на сервері:", err);
+    } finally {
       setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
     }
   };
@@ -116,7 +113,7 @@ export default function HomePage() {
   if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -126,37 +123,28 @@ export default function HomePage() {
       <Navbar onLoginClick={() => setShowLoginModal(true)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Індикатор синхронізації з хмарною БД */}
         {isDataLoading && (
           <div className="text-xs text-blue-600 animate-pulse mb-4 flex items-center gap-1">
             <span className="w-2 h-2 bg-blue-600 rounded-full inline-block" /> Синхронізація з FarroService API...
           </div>
         )}
 
-        {/* === ПАНЕЛЬ АДМІНІСТРАТОРА === */}
         {user?.role === "Admin" && (
           <DashboardLayout title="Всі записи" role="Адміністратор">
             <BookingsTable bookings={bookings} onAction={handleAdminAction} />
           </DashboardLayout>
         )}
 
-        {/* === ПАНЕЛЬ МАЙСТРА === */}
         {user?.role === "Master" && (
           <DashboardLayout title="Мій розклад" role="Майстер">
             <BookingsTable bookings={bookings} onAction={handleAdminAction} />
           </DashboardLayout>
         )}
 
-        {/* === ІНТЕРФЕЙС ГОСТЯ === */}
         {(!user || user.role === "Guest") && (
           <>
             {selectedService ? (
-              <BookingWizard
-                service={selectedService}
-                bookings={bookings}
-                onBack={() => setSelectedService(null)}
-                onComplete={handleBookingComplete}
-              />
+              <BookingWizard service={selectedService} onBack={() => setSelectedService(null)} onComplete={handleBookingComplete} />
             ) : (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
@@ -174,7 +162,6 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* === МОДАЛЬНЕ ВІКНО АВТЕНТИФІКАЦІЇ === */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -186,7 +173,7 @@ export default function HomePage() {
                 <X className="w-5 h-5" />
               </button>
               <h2 className="text-2xl font-bold mb-1">Авторизація</h2>
-              <p className="text-slate-400 text-sm flex items-center gap-2">Вхід до системи для співробітників</p>
+              <p className="text-slate-400 text-sm">Вхід до системи для співробітників</p>
             </div>
 
             <form onSubmit={handleLoginSubmit} className="p-6 space-y-5">

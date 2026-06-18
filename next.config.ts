@@ -1,14 +1,13 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+import type { NextConfig } from "next";
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  allowedDevOrigins: [BASE_URL, "localhost:3000"],
-
+const nextConfig: NextConfig = {
+  allowedDevOrigins: [process.env.BROWSER_URL!],
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL;
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:5268/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

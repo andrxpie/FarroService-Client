@@ -8,10 +8,7 @@ interface ServiceCardProps {
   onSelect: (service: Service) => void;
 }
 
-export const ServiceCard: React.FC<ServiceCardProps> = ({
-  service,
-  onSelect,
-}) => (
+export const ServiceCard: React.FC<ServiceCardProps> = ({ service, onSelect }) => (
   <Card className="hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group">
     <div className="h-32 bg-slate-100 relative overflow-hidden flex items-center justify-center">
       <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-slate-500/10 group-hover:opacity-0 transition-opacity" />
@@ -22,11 +19,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       <p className="text-sm text-slate-500 mb-4 grow">{service.description}</p>
       <div className="flex items-center justify-between mt-auto">
         <span className="text-sm font-medium text-slate-400 flex items-center">
-          <Clock className="w-4 h-4 mr-1" /> {service.duration} хв
+          <Clock className="w-4 h-4 mr-1" /> {service.durationMinutes} хв
         </span>
-        <span className="font-bold text-blue-600 text-lg">
-          {service.price === 0 ? "Безкоштовно" : `${service.price} ₴`}
-        </span>
+        <span className="font-bold text-blue-600 text-lg">{service.price === 0 ? "Безкоштовно" : `${service.price} ₴`}</span>
       </div>
       <button
         onClick={() => onSelect(service)}
