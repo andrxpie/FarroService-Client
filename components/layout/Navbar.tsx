@@ -131,36 +131,37 @@ export const Navbar: React.FC = () => {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="bg-blue-600 text-white p-1.5 rounded-lg">
+            <Link href="/" className="flex items-center gap-2 min-w-0">
+              <div className="bg-blue-600 text-white p-1.5 rounded-lg flex-shrink-0">
                 <Wrench className="w-5 h-5" />
               </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">
+              <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-900 truncate">
                 Farro<span className="text-blue-600">Service</span>
               </span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">{user.fullName}</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:block max-w-[auto] truncate">{user.fullName}</span>
                   <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <div className="px-3 py-1.5 rounded-md text-sm font-medium bg-white shadow text-blue-600 flex items-center gap-2">
+                    <div className="px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium bg-white shadow text-blue-600 flex items-center gap-2">
                       {ROLE_ICONS[user.role] ?? <User className="w-4 h-4" />}
-                      {ROLE_LABELS[user.role] ?? user.role}
+                      <span className="hidden sm:inline">{ROLE_LABELS[user.role] ?? user.role}</span>
                     </div>
                     <button
                       onClick={openProfile}
                       title="Налаштування профілю"
-                      className="px-3 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <Settings className="w-4 h-4" />
                     </button>
                     <button
                       onClick={logout}
-                      className="px-3 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
+                      title="Вийти"
+                      className="px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4" /> Вийти
+                      <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Вийти</span>
                     </button>
                   </div>
                 </div>
@@ -168,9 +169,10 @@ export const Navbar: React.FC = () => {
                 <div className="flex bg-slate-100 p-1 rounded-lg">
                   <button
                     onClick={openLogin}
-                    className="px-4 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
+                    title="Вхід для персоналу"
+                    className="px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    <User className="w-4 h-4" /> Вхід для персоналу
+                    <User className="w-4 h-4" /> <span className="hidden sm:inline">Вхід для персоналу</span><span className="sm:hidden">Вхід</span>
                   </button>
                 </div>
               )}

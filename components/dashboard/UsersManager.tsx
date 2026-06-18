@@ -184,9 +184,9 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="relative w-72">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
@@ -198,7 +198,7 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
           </div>
           <button
             onClick={() => setShowFiltersModal(true)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer flex-shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer flex-shrink-0 ${
               activeFilterCount > 0
                 ? "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100"
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300"
@@ -216,15 +216,15 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
         {isMainAdmin && (
           <button
             onClick={() => { cancelEdit(); setCreateErrors({}); setCreateForm(EMPTY_CREATE); setShowCreate(true); }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer flex-shrink-0"
+            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer w-full sm:w-auto flex-shrink-0"
           >
             <Plus className="w-4 h-4" /> Додати користувача
           </button>
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Table — desktop */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-auto max-h-[520px]">
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="sticky top-0 z-10 bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
@@ -270,6 +270,45 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
         </div>
         {filtered.length === 0 && (
           <div className="p-12 text-center text-slate-400">
+            {searchQuery || activeFilterCount > 0 ? "За вашим запитом нічого не знайдено" : "Користувачів не знайдено"}
+          </div>
+        )}
+      </div>
+
+      {/* Cards — mobile */}
+      <div className="md:hidden space-y-3">
+        {filtered.map((u) => (
+          <div key={u.id} className={`bg-white rounded-xl shadow-sm border p-4 space-y-3 ${editingUser?.id === u.id ? "border-blue-300 bg-blue-50/50" : "border-slate-200"}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium text-slate-900 truncate">{u.fullName}</div>
+                <div className="text-xs text-slate-400 mt-0.5 break-all">{u.email}</div>
+              </div>
+              <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 flex-shrink-0">
+                {ROLE_LABEL[u.role] ?? u.role}
+              </span>
+            </div>
+            <div className="text-xs text-slate-500">
+              {u.specializations.length > 0 ? u.specializations.map((s) => s.name).join(", ") : "—"}
+            </div>
+            {u.role !== "MainAdmin" && (
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                {u.role !== "MainAdmin" && (
+                  <button onClick={() => openEdit(u)} className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 cursor-pointer" title="Редагувати">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+                {isMainAdmin && u.role !== "MainAdmin" && (
+                  <button onClick={() => setDeleteId(u.id)} className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 cursor-pointer" title="Видалити">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-400">
             {searchQuery || activeFilterCount > 0 ? "За вашим запитом нічого не знайдено" : "Користувачів не знайдено"}
           </div>
         )}

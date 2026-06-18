@@ -37,7 +37,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${BG[type]} ${
+      className={`fixed bottom-4 right-4 left-4 sm:left-auto sm:bottom-6 sm:right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${BG[type]} ${
         isExiting
           ? "animate-out slide-out-to-right-4 fade-out duration-300"
           : "animate-in slide-in-from-bottom-4 fade-in duration-300"

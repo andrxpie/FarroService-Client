@@ -54,17 +54,17 @@ export const Modal: React.FC<ModalProps> = ({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-slate-900 text-white p-6 relative flex-shrink-0">
+        <div className="bg-slate-900 text-white p-4 sm:p-6 relative flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold mb-0.5">{title}</h2>
-          {subtitle && <p className="text-slate-400 text-sm">{subtitle}</p>}
+          <h2 className="text-lg sm:text-xl font-bold mb-0.5 pr-8">{title}</h2>
+          {subtitle && <p className="text-slate-400 text-sm pr-8">{subtitle}</p>}
         </div>
-        <div className="p-6 overflow-y-auto">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

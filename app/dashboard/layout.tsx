@@ -13,7 +13,7 @@ function TabLink({ href, icon, label }: { href: string; icon: React.ReactNode; l
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
         active ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-800"
       }`}
     >
@@ -44,12 +44,12 @@ export default function DashboardRouteLayout({ children }: Readonly<{ children: 
   const isMaster = user.role === "Master";
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <DashboardLayout
         title={isAdmin ? "Панель адміністратора" : "Панель майстра"}
         role={isMainAdmin ? "Головний адміністратор" : isAdmin ? "Адміністратор" : "Майстер"}
       >
-        <div className="flex gap-1 border-b border-slate-200 mb-6">
+        <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
           {isAdmin && (
             <>
               <TabLink href="/dashboard/bookings" icon={<ClipboardList className="w-4 h-4" />} label="Записи" />

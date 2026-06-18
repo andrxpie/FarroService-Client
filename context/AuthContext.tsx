@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { authService } from "@/services/authService";
 import type { AuthUser, AuthContextType, LoginDto, RegisterDto } from "@/types";
 
@@ -17,7 +17,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     })();
   }, []);
 
-  const login = async (dto: LoginDto) => {
+  const login = useCallback(async (dto: LoginDto) => {
     setIsLoading(true);
     try {
       const res = await authService.login(dto);
@@ -25,9 +25,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const register = async (dto: RegisterDto) => {
+  const register = useCallback(async (dto: RegisterDto) => {
     setIsLoading(true);
     try {
       const res = await authService.register(dto);
@@ -35,23 +35,23 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     authService.logout();
     setUser(null);
-  };
+  }, []);
 
-  const updateProfile = (fullName: string, email: string) => {
+  const updateProfile = useCallback((fullName: string, email: string) => {
     if (!user) return;
     const updated = { ...user, fullName, email };
     setUser(updated);
     localStorage.setItem("farro_user", JSON.stringify(updated));
-  };
+  }, [user]);
 
   const value = useMemo(
     () => ({ user, isLoading, login, register, logout, updateProfile }),
-    [user, isLoading],
+    [user, isLoading, login, register, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

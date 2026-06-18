@@ -53,7 +53,7 @@ export const ScheduleEditor: React.FC<ScheduleEditorProps> = ({ masterId, onToas
       }
     }
     void load();
-  }, [masterId]);
+  }, [masterId, onToast]);
 
   const handleSave = async () => {
     for (const day of WORK_DAYS) {
@@ -97,7 +97,8 @@ export const ScheduleEditor: React.FC<ScheduleEditorProps> = ({ masterId, onToas
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Table — desktop */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
@@ -146,11 +147,53 @@ export const ScheduleEditor: React.FC<ScheduleEditorProps> = ({ masterId, onToas
         </table>
       </div>
 
+      {/* Cards — mobile */}
+      <div className="md:hidden space-y-3">
+        {WORK_DAYS.map((day) => {
+          const d = schedule[day];
+          return (
+            <div key={day} className={`rounded-xl border p-4 space-y-3 ${d.isWorkingDay ? "bg-white border-slate-200" : "bg-slate-50 border-slate-200"}`}>
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <span className="font-medium text-slate-900">{DAY_NAMES[day]}</span>
+                <input
+                  type="checkbox"
+                  checked={d.isWorkingDay}
+                  onChange={(e) => update(day, { isWorkingDay: e.target.checked })}
+                  className="w-5 h-5 accent-blue-600"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Початок</label>
+                  <input
+                    type="time"
+                    disabled={!d.isWorkingDay}
+                    value={d.startTime}
+                    onChange={(e) => update(day, { startTime: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-40 disabled:bg-slate-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Кінець</label>
+                  <input
+                    type="time"
+                    disabled={!d.isWorkingDay}
+                    value={d.endTime}
+                    onChange={(e) => update(day, { endTime: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-40 disabled:bg-slate-50"
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer w-full sm:w-auto"
         >
           <Save className="w-4 h-4" /> {isSaving ? "Збереження..." : "Зберегти розклад"}
         </button>

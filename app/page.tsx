@@ -88,8 +88,8 @@ export default function HomePage() {
         />
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Послуги</h1>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Послуги</h1>
             <p className="text-slate-500 mt-2">Оберіть послугу для бронювання майстра</p>
           </div>
           <ServiceCatalog services={services} onSelect={setSelectedService} />

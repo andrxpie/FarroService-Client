@@ -266,7 +266,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({ booking, onC
       return <div className="p-3 bg-slate-50 rounded-lg text-slate-500 text-xs text-center border border-dashed border-slate-300">Немає доступних слотів на цю дату</div>;
     }
     return (
-      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-32 overflow-y-auto">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 max-h-32 overflow-y-auto">
         {displaySlots.map((slot) => (
           <button
             key={slot.time}

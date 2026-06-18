@@ -205,7 +205,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
       );
     }
     return (
-      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
         {slots.map((slot) => (
           <button
             key={slot.time}
@@ -231,9 +231,9 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
       </button>
 
       <div className="bg-white rounded-2xl shadow-lg border border-slate-100">
-        <div className="bg-slate-900 text-white p-6 rounded-t-2xl overflow-hidden">
-          <h2 className="text-2xl font-bold mb-1">Оформлення запису</h2>
-          <p className="text-slate-400 text-sm flex items-center gap-2">
+        <div className="bg-slate-900 text-white p-4 sm:p-6 rounded-t-2xl overflow-hidden">
+          <h2 className="text-xl sm:text-2xl font-bold mb-1">Оформлення запису</h2>
+          <p className="text-slate-400 text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="bg-slate-800 px-2 py-0.5 rounded text-white">{service.title}</span>
             <span>•</span>
             <span>{service.durationMinutes} хв</span>
@@ -242,20 +242,20 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
           </p>
         </div>
 
-        <div className="p-6">
-          <div className="flex items-center mb-8 text-sm">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center mb-6 sm:mb-8 text-xs sm:text-sm">
             <div className={`flex items-center gap-2 ${step >= 1 ? "text-blue-600 font-bold" : "text-slate-400"}`}>
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center border ${step >= 1 ? "bg-blue-100 border-blue-600" : "border-slate-300"}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center border flex-shrink-0 ${step >= 1 ? "bg-blue-100 border-blue-600" : "border-slate-300"}`}
               >
                 1
               </div>
               Майстер і Час
             </div>
-            <div className="h-px bg-slate-200 grow mx-4" />
+            <div className="h-px bg-slate-200 grow mx-2 sm:mx-4" />
             <div className={`flex items-center gap-2 ${step >= 2 ? "text-blue-600 font-bold" : "text-slate-400"}`}>
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center border ${step >= 2 ? "bg-blue-100 border-blue-600" : "border-slate-300"}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center border flex-shrink-0 ${step >= 2 ? "bg-blue-100 border-blue-600" : "border-slate-300"}`}
               >
                 2
               </div>

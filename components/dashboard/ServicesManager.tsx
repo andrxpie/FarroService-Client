@@ -170,9 +170,9 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="relative w-72">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
@@ -184,7 +184,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
           </div>
           <button
             onClick={() => setShowFiltersModal(true)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer flex-shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer flex-shrink-0 ${
               activeFilterCount > 0
                 ? "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100"
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300"
@@ -201,14 +201,14 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer flex-shrink-0"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer w-full sm:w-auto flex-shrink-0"
         >
           <Plus className="w-4 h-4" /> Додати послугу
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Table — desktop */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-auto max-h-[520px]">
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="sticky top-0 z-10 bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
@@ -264,6 +264,45 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         </div>
         {sorted.length === 0 && (
           <div className="p-12 text-center text-slate-400">
+            {searchQuery || activeFilterCount > 0 ? "За вашим запитом нічого не знайдено" : "Послуг не знайдено"}
+          </div>
+        )}
+      </div>
+
+      {/* Cards — mobile */}
+      <div className="md:hidden space-y-3">
+        {sorted.map((s) => (
+          <div key={s.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium text-slate-900">{s.title}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{s.description}</div>
+              </div>
+              <button onClick={() => handleToggleStatus(s)} title="Натисніть для зміни статусу" className="cursor-pointer flex-shrink-0">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold transition-colors duration-150 hover:opacity-75 ${
+                  s.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+                }`}>
+                  {s.isActive ? "Активна" : "Неактивна"}
+                </span>
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+              <span>{s.specializationName ?? "—"}</span>
+              <span>{s.durationMinutes} хв</span>
+              <span className="font-medium text-slate-900">{s.price} грн</span>
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button onClick={() => openEdit(s)} className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 cursor-pointer" title="Редагувати">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => setDeleteId(s.id)} className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 cursor-pointer" title="Видалити">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-400">
             {searchQuery || activeFilterCount > 0 ? "За вашим запитом нічого не знайдено" : "Послуг не знайдено"}
           </div>
         )}
