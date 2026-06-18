@@ -9,6 +9,9 @@ export interface SelectOption {
   label: string;
 }
 
+const ITEM_HEIGHT = 41; // приблизна висота одного пункту (px)
+const MAX_VISIBLE = 6; // скільки пунктів показувати без прокрутки
+
 interface SelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -27,6 +30,7 @@ export const Select: React.FC<SelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [openUp, setOpenUp] = useState(false);
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -47,11 +51,25 @@ export const Select: React.FC<SelectProps> = ({
   const openDropdown = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const gap = 6;
+      // максимальна бажана висота списку (6 пунктів + трохи на placeholder)
+      const desiredHeight = ITEM_HEIGHT * MAX_VISIBLE;
+      const spaceBelow = window.innerHeight - rect.bottom - gap;
+      const spaceAbove = rect.top - gap;
+      // відкриваємо вгору, якщо знизу не вистачає місця, а зверху його більше
+      const up = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+      const available = up ? spaceAbove : spaceBelow;
+      const maxHeight = Math.min(desiredHeight, available);
+
+      setOpenUp(up);
       setDropdownStyle({
         position: "fixed",
-        top: rect.bottom + 6,
+        ...(up
+          ? { bottom: window.innerHeight - rect.top + gap }
+          : { top: rect.bottom + gap }),
         left: rect.left,
         width: rect.width,
+        maxHeight,
         zIndex: 9999,
       });
     }
@@ -93,10 +111,14 @@ export const Select: React.FC<SelectProps> = ({
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className={`bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden ${
+      className={`bg-white border border-slate-200 rounded-xl shadow-lg overflow-y-auto ${
         isClosing
-          ? "animate-out fade-out zoom-out-95 slide-out-to-top-2 duration-150"
-          : "animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150"
+          ? `animate-out fade-out zoom-out-95 duration-150 ${
+              openUp ? "slide-out-to-bottom-2" : "slide-out-to-top-2"
+            }`
+          : `animate-in fade-in zoom-in-95 duration-150 ${
+              openUp ? "slide-in-from-bottom-2" : "slide-in-from-top-2"
+            }`
       }`}
     >
       {placeholder && (
