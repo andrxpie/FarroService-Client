@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Trash2, X, Check, Pencil } from "lucide-react";
+import { Plus, Trash2, X, Check, Pencil, Search } from "lucide-react";
 import { apiClient } from "@/utils/apiClient";
 import type { AdminUser, Specialization, CreateUserPayload, UpdateUserPayload } from "@/types";
+import { UsersFilters, UserFilterState, DEFAULT_USER_FILTERS } from "./UsersFilters";
+import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface UsersManagerProps {
   users: AdminUser[];
@@ -44,24 +47,25 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
 }) => {
   const availableRoles = isMainAdmin ? ALL_ROLES : ["Master"];
 
-  // --- Create form state ---
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState<CreateUserPayload>(EMPTY_CREATE);
   const [createErrors, setCreateErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Edit form state ---
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editForm, setEditForm] = useState<UpdateUserPayload>({ fullName: "", email: "" });
   const [editErrors, setEditErrors] = useState<FormErrors>({});
   const [isEditing, setIsEditing] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userFilters, setUserFilters] = useState<UserFilterState>(DEFAULT_USER_FILTERS);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const cls = (errs: FormErrors, field: string) => (errs[field] ? invalid : normal);
   const clearErr = (errs: FormErrors, setErrs: React.Dispatch<React.SetStateAction<FormErrors>>, field: string) => {
     if (errs[field]) setErrs((prev) => { const n = { ...prev }; delete n[field]; return n; });
   };
 
-  // --- Create validation ---
   const validateCreate = (): boolean => {
     const e: FormErrors = {};
     if (createForm.fullName.trim().length < 2) e.fullName = "Введіть ПІБ (мінімум 2 символи)";
@@ -73,7 +77,6 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
     return Object.keys(e).length === 0;
   };
 
-  // --- Edit validation ---
   const validateEdit = (): boolean => {
     const e: FormErrors = {};
     if (editForm.fullName.trim().length < 2) e.fullName = "Введіть ПІБ (мінімум 2 символи)";
@@ -161,7 +164,6 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Видалити користувача?")) return;
     try {
       await apiClient(`/api/admin/users/${id}`, { method: "DELETE" });
       onUsersChange(users.filter((u) => u.id !== id));
@@ -174,28 +176,116 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
   const editingRole = editForm.role ?? editingUser?.role ?? "Master";
   const showEditSpecs = editingRole === "Master";
 
+  const q = searchQuery.toLowerCase().trim();
+  const filtered = users.filter((u) => {
+    if (q && !u.fullName.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    if (userFilters.roles.length > 0 && !userFilters.roles.includes(u.role)) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-4">
-      {isMainAdmin && (
-        <div className="flex justify-end">
-          <button
-            onClick={() => { cancelEdit(); setCreateErrors({}); setCreateForm(EMPTY_CREATE); setShowCreate(true); }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Додати користувача
-          </button>
-        </div>
-      )}
-
-      {/* Create form */}
-      {showCreate && isMainAdmin && (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-900">Новий користувач</h3>
-            <button onClick={() => setShowCreate(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-              <X className="w-5 h-5" />
-            </button>
+      {/* Users table with sidebar */}
+      <div className="flex gap-6 items-start">
+        {/* Left sidebar */}
+        <aside className="w-56 flex-shrink-0 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Пошук за ПІБ, email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 bg-white"
+            />
           </div>
+          <UsersFilters filters={userFilters} onChange={setUserFilters} />
+        </aside>
+
+        {/* Right: table */}
+        <div className="flex-1 min-w-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Card header with button */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <span className="font-semibold text-slate-900 text-sm">Список користувачів</span>
+            {isMainAdmin && (
+              <button
+                onClick={() => { cancelEdit(); setCreateErrors({}); setCreateForm(EMPTY_CREATE); setShowCreate(true); }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Додати користувача
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-auto max-h-[480px]">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="sticky top-0 z-10 bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4">ПІБ</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Роль</th>
+                  <th className="px-6 py-4">Спеціалізації</th>
+                  <th className="px-6 py-4 text-right">Дії</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((u) => (
+                  <tr
+                    key={u.id}
+                    className={`hover:bg-slate-50 transition-colors group ${editingUser?.id === u.id ? "bg-blue-50/50" : ""}`}
+                  >
+                    <td className="px-6 py-4 font-medium text-slate-900">{u.fullName}</td>
+                    <td className="px-6 py-4 text-slate-500">{u.email}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                        {ROLE_LABEL[u.role] ?? u.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 text-xs">
+                      {u.specializations.length > 0 ? u.specializations.map((s) => s.name).join(", ") : "—"}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {u.role !== "MainAdmin" && (
+                          <button
+                            onClick={() => openEdit(u)}
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 cursor-pointer"
+                            title="Редагувати"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {isMainAdmin && u.role !== "MainAdmin" && (
+                          <button
+                            onClick={() => setDeleteId(u.id)}
+                            className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 cursor-pointer"
+                            title="Видалити"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filtered.length === 0 && (
+            <div className="p-12 text-center text-slate-400">
+              {searchQuery || userFilters.roles.length > 0 ? "За вашим запитом нічого не знайдено" : "Користувачів не знайдено"}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create user modal */}
+      {showCreate && isMainAdmin && (
+        <Modal
+          title="Новий користувач"
+          subtitle="Заповніть дані нового співробітника"
+          onClose={() => setShowCreate(false)}
+        >
           <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">ПІБ</label>
@@ -279,18 +369,16 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
               </button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
 
-      {/* Edit form */}
+      {/* Edit user modal */}
       {editingUser && (
-        <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-900">Редагування: {editingUser.fullName}</h3>
-            <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        <Modal
+          title={`Редагування: ${editingUser.fullName}`}
+          subtitle="Змініть потрібні поля та збережіть"
+          onClose={cancelEdit}
+        >
           <form onSubmit={handleEditSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">ПІБ</label>
@@ -362,69 +450,17 @@ export const UsersManager: React.FC<UsersManagerProps> = ({
               </button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
 
-      {/* Users table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4">ПІБ</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Роль</th>
-                <th className="px-6 py-4">Спеціалізації</th>
-                <th className="px-6 py-4 text-right">Дії</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.map((u) => (
-                <tr
-                  key={u.id}
-                  className={`hover:bg-slate-50 transition-colors group ${editingUser?.id === u.id ? "bg-blue-50/50" : ""}`}
-                >
-                  <td className="px-6 py-4 font-medium text-slate-900">{u.fullName}</td>
-                  <td className="px-6 py-4 text-slate-500">{u.email}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                      {ROLE_LABEL[u.role] ?? u.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-500 text-xs">
-                    {u.specializations.length > 0 ? u.specializations.map((s) => s.name).join(", ") : "—"}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {u.role !== "MainAdmin" && (
-                        <button
-                          onClick={() => openEdit(u)}
-                          className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 cursor-pointer"
-                          title="Редагувати"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      )}
-                      {isMainAdmin && u.role !== "MainAdmin" && (
-                        <button
-                          onClick={() => handleDelete(u.id)}
-                          className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 cursor-pointer"
-                          title="Видалити"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {users.length === 0 && (
-          <div className="p-12 text-center text-slate-400">Користувачів не знайдено</div>
-        )}
-      </div>
+      {/* Delete confirmation */}
+      {deleteId && (
+        <ConfirmModal
+          message="Видалити цього користувача? Дію неможливо скасувати."
+          onConfirm={() => { handleDelete(deleteId); setDeleteId(null); }}
+          onCancel={() => setDeleteId(null)}
+        />
+      )}
     </div>
   );
 };

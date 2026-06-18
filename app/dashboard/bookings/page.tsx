@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BookingsTable } from "@/components/dashboard/BookingsTable";
 import { Toast } from "@/components/ui/Toast";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/utils/apiClient";
 import type { Booking, BookingStatus } from "@/types";
@@ -16,6 +17,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -41,6 +43,15 @@ export default function BookingsPage() {
     }
   }, []);
 
+  const doDelete = useCallback(async (id: string) => {
+    try {
+      await apiClient(`/api/bookings/${id}`, { method: "DELETE" });
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    } catch {
+      setToast({ message: "Не вдалося видалити бронювання.", type: "error" });
+    }
+  }, []);
+
   if (isDataLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -49,9 +60,22 @@ export default function BookingsPage() {
     );
   }
 
+  const isAdmin = user?.role === "Admin" || user?.role === "MainAdmin";
+
   return (
     <>
-      <BookingsTable bookings={bookings} onAction={handleAction} />
+      <BookingsTable
+        bookings={bookings}
+        onAction={handleAction}
+        onDelete={isAdmin ? setDeleteId : undefined}
+      />
+      {deleteId && (
+        <ConfirmModal
+          message="Видалити це скасоване бронювання? Дію неможливо скасувати."
+          onConfirm={() => { doDelete(deleteId); setDeleteId(null); }}
+          onCancel={() => setDeleteId(null)}
+        />
+      )}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );

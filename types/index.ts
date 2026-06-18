@@ -1,5 +1,3 @@
-export type UserRole = "guest" | "master" | "admin";
-export type ViewState = UserRole | "guest-booking";
 export type BookingStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
 export interface Service {
@@ -46,6 +44,8 @@ export interface CreateBookingPayload {
   clientName: string;
   phone: string;
   address: string;
+  latitude?: string;
+  longitude?: string;
   comment?: string;
 }
 

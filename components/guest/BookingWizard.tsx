@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Calendar, Loader2, MapPin } from "lucide-react";
 import { Service, Master, CreateBookingPayload } from "@/types";
 import { apiClient } from "@/utils/apiClient";
 
@@ -10,11 +10,25 @@ interface TimeSlot {
   isAvailable: boolean;
 }
 
+interface AddressSuggestion {
+  place_id: string;
+  display_name: string;
+  lat: number;
+  lng: number;
+}
+
 interface BookingWizardProps {
   service: Service;
   onBack: () => void;
   onComplete: (data: CreateBookingPayload) => void;
 }
+
+const NAME_RE = /^[А-ЯҐЄІЇа-яґєіїA-Za-z][А-ЯҐЄІЇа-яґєіїA-Za-z\s'\-]{1,}$/;
+const PHONE_RE = /^(\+?38)?0\d{9}$|^\+?[1-9]\d{6,14}$/;
+
+const inputBase = "w-full p-3 border rounded-lg focus:ring-2 outline-none text-slate-900 bg-white transition-shadow";
+const inputNormal = `${inputBase} border-slate-300 focus:ring-blue-500`;
+const inputInvalid = `${inputBase} border-red-400 focus:ring-red-300`;
 
 export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, onComplete }) => {
   const [step, setStep] = useState<number>(1);
@@ -29,6 +43,14 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
+  const [formErrors, setFormErrors] = useState<{ name?: string; phone?: string; address?: string }>({});
+
+  // Address autocomplete state
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const skipNextFetch = useRef(false);
+  const addressWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     apiClient<Master[]>("/api/masters")
@@ -69,17 +91,92 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
     };
   }, [masterId, date, service.id]);
 
+  // Debounced Google Maps address autocomplete
+  useEffect(() => {
+    const query = formData.address.trim();
+
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      return;
+    }
+
+    if (query.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(query)}`);
+        const data: { predictions: { place_id: string; description: string; lat: number; lng: number }[] } = await res.json();
+        const mapped: AddressSuggestion[] = data.predictions.map((p) => ({
+          place_id: p.place_id,
+          display_name: p.description,
+          lat: p.lat,
+          lng: p.lng,
+        }));
+        setSuggestions(mapped);
+        setShowSuggestions(mapped.length > 0);
+      } catch {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [formData.address]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (addressWrapperRef.current && !addressWrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selectSuggestion = (s: AddressSuggestion) => {
+    skipNextFetch.current = true;
+    setFormData((prev) => ({ ...prev, address: s.display_name }));
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setCoords({ lat: s.lat, lng: s.lng });
+  };
+
+  const validateStep2 = (): boolean => {
+    const errs: { name?: string; phone?: string; address?: string } = {};
+    const name = formData.name.trim();
+    if (name.length < 2 || !NAME_RE.test(name)) {
+      errs.name = "Введіть коректне ім'я (тільки літери, мінімум 2 символи)";
+    }
+    const phoneNorm = formData.phone.trim().replace(/[\s\-().]/g, "");
+    if (!PHONE_RE.test(phoneNorm)) {
+      errs.phone = "Введіть коректний номер телефону (напр. +380501234567)";
+    }
+    if (!formData.address.trim()) {
+      errs.address = "Вкажіть адресу об'єкта";
+    }
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (masterId === null || !time) return;
+    if (!validateStep2()) return;
     onComplete({
       serviceId: service.id,
       masterId,
       date,
       startTime: time,
       clientName: formData.name,
-      phone: formData.phone,
+      phone: formData.phone.trim().replace(/[\s\-().]/g, ""),
       address: formData.address,
+      latitude: coords ? String(coords.lat) : undefined,
+      longitude: coords ? String(coords.lng) : undefined,
     });
   };
 
@@ -133,8 +230,8 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
         <ChevronLeft className="w-4 h-4 mr-1" /> Повернутися до послуг
       </button>
 
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-        <div className="bg-slate-900 text-white p-6">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100">
+        <div className="bg-slate-900 text-white p-6 rounded-t-2xl overflow-hidden">
           <h2 className="text-2xl font-bold mb-1">Оформлення запису</h2>
           <p className="text-slate-400 text-sm flex items-center gap-2">
             <span className="bg-slate-800 px-2 py-0.5 rounded text-white">{service.title}</span>
@@ -252,41 +349,76 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
                   </label>
                   <input
                     id="client-name"
-                    required
                     type="text"
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white"
+                    className={formErrors.name ? inputInvalid : inputNormal}
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
+                    }}
                     placeholder="Іван Іванов"
                   />
+                  {formErrors.name && <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>}
                 </div>
+
                 <div>
                   <label htmlFor="client-phone" className="block text-sm font-medium text-slate-700 mb-1">
                     Телефон
                   </label>
                   <input
                     id="client-phone"
-                    required
                     type="tel"
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white"
+                    className={formErrors.phone ? inputInvalid : inputNormal}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value });
+                      if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: undefined }));
+                    }}
                     placeholder="+380 50 123 4567"
                   />
+                  {formErrors.phone && <p className="mt-1 text-xs text-red-500">{formErrors.phone}</p>}
                 </div>
+
                 <div>
                   <label htmlFor="client-address" className="block text-sm font-medium text-slate-700 mb-1">
                     Адреса об&apos;єкта
                   </label>
-                  <input
-                    id="client-address"
-                    required
-                    type="text"
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 bg-white"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="м. Київ, вул. Хрещатик 1, кв 10"
-                  />
+                  <div className="relative" ref={addressWrapperRef}>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <input
+                        id="client-address"
+                        type="text"
+                        className={`${formErrors.address ? inputInvalid : inputNormal} pl-9`}
+                        value={formData.address}
+                        onChange={(e) => {
+                          setCoords(null);
+                          setFormData({ ...formData, address: e.target.value });
+                          if (formErrors.address) setFormErrors((prev) => ({ ...prev, address: undefined }));
+                        }}
+                        onFocus={() => {
+                          if (suggestions.length > 0) setShowSuggestions(true);
+                        }}
+                        placeholder="м. Київ, вул. Хрещатик 1"
+                        autoComplete="off"
+                      />
+                    </div>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <ul className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {suggestions.map((s) => (
+                          <li
+                            key={s.place_id}
+                            onMouseDown={() => selectSuggestion(s)}
+                            className="px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 flex items-center gap-2"
+                          >
+                            <MapPin className="w-3 h-3 flex-shrink-0 text-slate-400" />
+                            {s.display_name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  {formErrors.address && <p className="mt-1 text-xs text-red-500">{formErrors.address}</p>}
                 </div>
               </div>
 
