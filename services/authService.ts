@@ -6,6 +6,7 @@ function saveSession(data: AuthResponse): void {
   localStorage.setItem(
     "farro_user",
     JSON.stringify({
+      id: data.userId,
       email: data.email,
       role: data.role,
       fullName: data.fullName,

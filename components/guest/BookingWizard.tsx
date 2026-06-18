@@ -32,10 +32,15 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
 
   useEffect(() => {
     apiClient<Master[]>("/api/masters")
-      .then(setMasters)
+      .then((all) => {
+        const qualified = service.specializationId
+          ? all.filter((m) => m.specializations.some((s) => s.id === service.specializationId))
+          : all;
+        setMasters(qualified);
+      })
       .catch(() => setMasters([]))
       .finally(() => setMastersLoading(false));
-  }, []);
+  }, [service.specializationId]);
 
   useEffect(() => {
     if (masterId === null || !date) return;
@@ -188,7 +193,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
                         </div>
                         <div>
                           <div className="font-medium text-sm text-slate-900">{m.fullName}</div>
-                          <div className="text-xs text-slate-500">{m.specialization ?? "Майстер"}</div>
+                          <div className="text-xs text-slate-500">{m.specializations.map((s) => s.name).join(", ") || "Майстер"}</div>
                         </div>
                       </button>
                     ))}

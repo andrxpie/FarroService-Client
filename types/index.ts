@@ -9,6 +9,8 @@ export interface Service {
   durationMinutes: number;
   description: string;
   isActive: boolean;
+  specializationId?: string;
+  specializationName?: string;
   image?: string;
 }
 
@@ -16,7 +18,7 @@ export interface Master {
   id: string;
   fullName: string;
   email: string;
-  specialization?: string;
+  specializations: Specialization[];
 }
 
 export interface Booking {
@@ -53,6 +55,7 @@ export interface ToastNotification {
 }
 
 export interface AuthUser {
+  id: string;
   email: string;
   role: string;
   fullName: string;
@@ -64,6 +67,14 @@ export interface AuthContextType {
   login: (dto: LoginDto) => Promise<void>;
   register: (dto: RegisterDto) => Promise<void>;
   logout: () => void;
+  updateProfile: (fullName: string, email: string) => void;
+}
+
+export interface UpdateProfilePayload {
+  fullName: string;
+  email: string;
+  currentPassword?: string;
+  newPassword?: string;
 }
 
 export interface LoginDto {
@@ -83,4 +94,60 @@ export interface AuthResponse {
   email: string;
   role: string;
   fullName: string;
+  userId: string;
+}
+
+export interface ScheduleItem {
+  id: string;
+  masterId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isWorkingDay: boolean;
+}
+
+export interface Specialization {
+  id: string;
+  name: string;
+}
+
+export interface AdminUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  specializations: Specialization[];
+  createdAt: string;
+}
+
+export interface CreateServicePayload {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  price: number;
+  specializationId: string;
+}
+
+export interface UpdateServicePayload {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  price: number;
+  isActive: boolean;
+  specializationId: string;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  fullName: string;
+  role: string;
+  specializationIds?: string[];
+}
+
+export interface UpdateUserPayload {
+  fullName: string;
+  email: string;
+  specializationIds?: string[];
+  role?: string;
 }

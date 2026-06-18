@@ -21,7 +21,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setIsLoading(true);
     try {
       const res = await authService.login(dto);
-      setUser({ email: res.email, role: res.role, fullName: res.fullName });
+      setUser({ id: res.userId, email: res.email, role: res.role, fullName: res.fullName });
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setIsLoading(true);
     try {
       const res = await authService.register(dto);
-      setUser({ email: res.email, role: res.role, fullName: res.fullName });
+      setUser({ id: res.userId, email: res.email, role: res.role, fullName: res.fullName });
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +42,17 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setUser(null);
   };
 
-  const value = useMemo(() => ({ user, isLoading, login, register, logout }), [user, isLoading]);
+  const updateProfile = (fullName: string, email: string) => {
+    if (!user) return;
+    const updated = { ...user, fullName, email };
+    setUser(updated);
+    localStorage.setItem("farro_user", JSON.stringify(updated));
+  };
+
+  const value = useMemo(
+    () => ({ user, isLoading, login, register, logout, updateProfile }),
+    [user, isLoading],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
