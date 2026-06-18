@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ServiceCard } from "@/components/guest/ServiceCard";
+import { ServiceCatalog } from "@/components/guest/ServiceCatalog";
 import { BookingWizard } from "@/components/guest/BookingWizard";
 import { Toast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
@@ -92,11 +92,7 @@ export default function HomePage() {
             <h1 className="text-3xl font-bold text-slate-900">Послуги</h1>
             <p className="text-slate-500 mt-2">Оберіть послугу для бронювання майстра</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((s) => (
-              <ServiceCard key={s.id} service={s} onSelect={setSelectedService} />
-            ))}
-          </div>
+          <ServiceCatalog services={services} onSelect={setSelectedService} />
         </div>
       )}
 

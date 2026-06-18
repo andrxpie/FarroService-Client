@@ -32,8 +32,24 @@ export interface Booking {
   endTime: string;
   status: BookingStatus;
   address?: string;
+  latitude?: string;
+  longitude?: string;
   comment?: string;
   createdAt: string;
+}
+
+export interface UpdateBookingPayload {
+  clientName: string;
+  phone: string;
+  serviceId: string;
+  masterId: string;
+  date: string;
+  startTime: string;
+  status: BookingStatus;
+  address?: string;
+  comment?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 export interface CreateBookingPayload {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BookingsTable } from "@/components/dashboard/BookingsTable";
+import { EditBookingModal } from "@/components/dashboard/EditBookingModal";
 import { Toast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
@@ -18,6 +19,7 @@ export default function BookingsPage() {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -68,6 +70,14 @@ export default function BookingsPage() {
         bookings={bookings}
         onAction={handleAction}
         onDelete={isAdmin ? setDeleteId : undefined}
+        onEdit={isAdmin ? setEditing : undefined}
+        showId={user?.role !== "Master"}
+      />
+      <EditBookingModal
+        booking={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(updated) => setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))}
+        onToast={(message, type) => setToast({ message, type })}
       />
       <ConfirmModal
         isOpen={!!deleteId}

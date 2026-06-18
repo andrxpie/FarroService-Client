@@ -15,7 +15,14 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
-    throw new Error(errorText || `Помилка сервера: ${response.status}`);
+    let message = errorText;
+    try {
+      const parsed = JSON.parse(errorText) as { message?: string };
+      if (parsed?.message) message = parsed.message;
+    } catch {
+      // not JSON — use raw text
+    }
+    throw new Error(message || `Помилка сервера: ${response.status}`);
   }
 
   if (response.status === 204) {

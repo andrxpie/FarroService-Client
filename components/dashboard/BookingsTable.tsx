@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle2, XCircle, Search, Trash2, SlidersHorizontal } from "lucide-react";
+import { CheckCircle2, XCircle, Search, Trash2, Pencil, SlidersHorizontal } from "lucide-react";
 import { Booking, BookingStatus } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -9,9 +9,11 @@ interface BookingsTableProps {
   bookings: Booking[];
   onAction: (id: string, status: BookingStatus) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (booking: Booking) => void;
+  showId?: boolean;
 }
 
-export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction, onDelete }) => {
+export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction, onDelete, onEdit, showId = true }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<BookingFilterState>(DEFAULT_BOOKING_FILTERS);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
@@ -55,9 +57,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
             <SlidersHorizontal className="w-4 h-4" />
             Фільтри
             {activeFilterCount > 0 && (
-              <span className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full font-bold leading-none">
-                {activeFilterCount}
-              </span>
+              <span className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full font-bold leading-none">{activeFilterCount}</span>
             )}
           </button>
         </div>
@@ -68,11 +68,10 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="sticky top-0 z-10 bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-4">ID</th>
+                  {showId && <th className="px-6 py-4">ID</th>}
                   <th className="px-6 py-4">Клієнт / Телефон</th>
-                  <th className="px-6 py-4">Послуга</th>
-                  <th className="px-6 py-4">Майстер</th>
-                  <th className="px-6 py-4">Дата і Час</th>
+                  <th className="px-6 py-4">Послуга / Майстер</th>
+                  <th className="px-6 py-4 min-w-[200px]">Дата і Час</th>
                   <th className="px-6 py-4">Адреса</th>
                   <th className="px-6 py-4">Статус</th>
                   <th className="px-6 py-4 text-right">Дії</th>
@@ -81,14 +80,16 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((b) => (
                   <tr key={b.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">{b.id.slice(0, 8).toUpperCase()}</td>
+                    {showId && <td className="px-6 py-4 font-mono text-xs text-slate-400">{b.id.slice(0, 8).toUpperCase()}</td>}
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-900">{b.clientName}</div>
                       <div className="text-xs text-slate-400 mt-0.5">{b.clientPhone || "-"}</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-900">{b.serviceTitle}</td>
-                    <td className="px-6 py-4">{b.masterFullName}</td>
                     <td className="px-6 py-4">
+                      <div className="text-xs font-medium text-slate-900">{b.serviceTitle}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{b.masterFullName}</div>
+                    </td>
+                    <td className="px-6 py-4 min-w-[200px]">
                       <div className="flex flex-col">
                         <span className="font-medium">{b.bookingDate.split("T")[0]}</span>
                         <span className="text-slate-400">{b.startTime.slice(0, 5)}</span>
@@ -118,6 +119,15 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
                             </button>
                           </>
                         )}
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(b)}
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 cursor-pointer"
+                            title="Редагувати"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
                         {onDelete && (
                           <button
                             onClick={() => onDelete(b.id)}
@@ -136,9 +146,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
           </div>
           {filtered.length === 0 && (
             <div className="p-12 text-center text-slate-400">
-              {searchQuery || activeFilterCount > 0
-                ? "За вашим запитом нічого не знайдено"
-                : "Записів не знайдено"}
+              {searchQuery || activeFilterCount > 0 ? "За вашим запитом нічого не знайдено" : "Записів не знайдено"}
             </div>
           )}
         </div>

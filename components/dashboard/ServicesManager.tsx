@@ -340,9 +340,32 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
             {errors.specializationId && <p className="mt-1 text-xs text-red-500">{errors.specializationId}</p>}
           </div>
           {editingId && (
-            <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" id="is-active" checked={isActiveEdit} onChange={(e) => setIsActiveEdit(e.target.checked)} className="w-4 h-4" />
-              <label htmlFor="is-active" className="text-sm font-medium text-slate-700">Активна</label>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Статус</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsActiveEdit(true)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                    isActiveEdit
+                      ? "bg-green-100 text-green-700 border-green-200"
+                      : "bg-white text-slate-600 border-slate-300 hover:border-green-300 hover:text-green-600"
+                  }`}
+                >
+                  Активна
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsActiveEdit(false)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                    !isActiveEdit
+                      ? "bg-red-50 text-red-600 border-red-100"
+                      : "bg-white text-slate-600 border-slate-300 hover:border-red-300 hover:text-red-600"
+                  }`}
+                >
+                  Неактивна
+                </button>
+              </div>
             </div>
           )}
           <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
