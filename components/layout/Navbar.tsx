@@ -28,6 +28,10 @@ export const Navbar: React.FC = () => {
   const { user, logout, updateProfile, login } = useAuth();
   const router = useRouter();
 
+  // Only the head admin may edit their own name/email; masters and regular
+  // admins can change their password only.
+  const canEditIdentity = user?.role === "MainAdmin";
+
   // Profile modal
   const [showProfile, setShowProfile] = useState(false);
   const [form, setForm] = useState<UpdateProfilePayload>({ fullName: "", email: "", currentPassword: "", newPassword: "" });
@@ -90,7 +94,9 @@ export const Navbar: React.FC = () => {
     }
 
     try {
-      const payload: UpdateProfilePayload = { fullName: form.fullName, email: form.email };
+      const payload: UpdateProfilePayload = canEditIdentity
+        ? { fullName: form.fullName, email: form.email }
+        : { fullName: user?.fullName ?? "", email: user?.email ?? "" };
       if (form.newPassword) {
         payload.currentPassword = form.currentPassword;
         payload.newPassword = form.newPassword;
@@ -249,7 +255,8 @@ export const Navbar: React.FC = () => {
             <input
               required
               type="text"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+              disabled={!canEditIdentity}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
               value={form.fullName}
               onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             />
@@ -260,11 +267,16 @@ export const Navbar: React.FC = () => {
             <input
               required
               type="email"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+              disabled={!canEditIdentity}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
+
+          {!canEditIdentity && (
+            <p className="text-xs text-slate-400">Ім&apos;я та email змінює адміністрація.</p>
+          )}
 
           <div className="pt-2 border-t border-slate-100">
             <p className="text-xs text-slate-400 mb-3">Залиште порожнім, якщо не змінюєте пароль</p>
