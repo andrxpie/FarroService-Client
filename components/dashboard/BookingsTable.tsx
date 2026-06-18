@@ -118,7 +118,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
                             </button>
                           </>
                         )}
-                        {b.status === "Cancelled" && onDelete && (
+                        {onDelete && (
                           <button
                             onClick={() => onDelete(b.id)}
                             className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 cursor-pointer"

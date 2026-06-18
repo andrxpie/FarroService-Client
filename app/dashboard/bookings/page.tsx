@@ -71,7 +71,7 @@ export default function BookingsPage() {
       />
       <ConfirmModal
         isOpen={!!deleteId}
-        message="Видалити це скасоване бронювання? Дію неможливо скасувати."
+        message="Видалити це бронювання? Дію неможливо скасувати."
         onConfirm={() => { doDelete(deleteId!); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />
