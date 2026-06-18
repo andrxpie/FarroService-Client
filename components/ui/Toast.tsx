@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, Info, X } from "lucide-react";
 
 export interface ToastProps {
@@ -22,18 +22,30 @@ function ToastIcon({ type }: { type: string }) {
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(onClose, 300);
+  };
+
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
+    const timer = setTimeout(handleClose, 4000);
     return () => clearTimeout(timer);
-  }, [onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${BG[type]} animate-in slide-in-from-bottom-4 fade-in duration-300`}
+      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${BG[type]} ${
+        isExiting
+          ? "animate-out slide-out-to-right-4 fade-out duration-300"
+          : "animate-in slide-in-from-bottom-4 fade-in duration-300"
+      }`}
     >
       <ToastIcon type={type} />
       <span className="text-sm font-medium text-slate-800">{message}</span>
-      <button onClick={onClose} className="ml-2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer">
+      <button onClick={handleClose} className="ml-2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer">
         <X className="w-4 h-4" />
       </button>
     </div>

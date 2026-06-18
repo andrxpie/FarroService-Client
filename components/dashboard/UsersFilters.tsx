@@ -19,6 +19,13 @@ interface UsersFiltersProps {
   onChange: (f: UserFilterState) => void;
 }
 
+const pill = (active: boolean) =>
+  `px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+    active
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-slate-600 border-slate-300 hover:border-blue-400 hover:text-blue-600"
+  }`;
+
 export const UsersFilters: React.FC<UsersFiltersProps> = ({ filters, onChange }) => {
   const toggle = (role: string) => {
     const next = filters.roles.includes(role)
@@ -28,35 +35,25 @@ export const UsersFilters: React.FC<UsersFiltersProps> = ({ filters, onChange })
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-700">Фільтри</span>
-        {filters.roles.length > 0 && (
-          <button
-            onClick={() => onChange(DEFAULT_USER_FILTERS)}
-            className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
-          >
-            Скинути
-          </button>
-        )}
-      </div>
-
+    <div className="space-y-5">
       <div>
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Роль</p>
-        <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Роль</p>
+        <div className="flex flex-wrap gap-2">
           {ROLES.map(({ value, label }) => (
-            <label key={value} className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={filters.roles.includes(value)}
-                onChange={() => toggle(value)}
-                className="w-3.5 h-3.5 rounded accent-blue-600"
-              />
-              <span className="text-xs text-slate-700 group-hover:text-slate-900">{label}</span>
-            </label>
+            <button key={value} type="button" onClick={() => toggle(value)} className={pill(filters.roles.includes(value))}>
+              {label}
+            </button>
           ))}
         </div>
       </div>
+
+      {filters.roles.length > 0 && (
+        <div className="pt-2 border-t border-slate-100">
+          <button onClick={() => onChange(DEFAULT_USER_FILTERS)} className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+            Скинути фільтри
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { Modal } from "./Modal";
 
 interface ConfirmModalProps {
+  isOpen: boolean;
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -12,12 +13,13 @@ interface ConfirmModalProps {
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
+  isOpen,
   message,
   onConfirm,
   onCancel,
   confirmLabel = "Видалити",
 }) => (
-  <Modal title="Підтвердження" onClose={onCancel} maxWidth="max-w-sm">
+  <Modal isOpen={isOpen} title="Підтвердження" onClose={onCancel} maxWidth="max-w-sm">
     <div className="flex flex-col gap-5">
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />

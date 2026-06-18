@@ -4,12 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Wrench, User, Briefcase, Shield, LogOut, Settings, X,
+  Wrench, User, Briefcase, Shield, LogOut, Settings,
   Loader2, AlertCircle, CheckCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/utils/apiClient";
 import type { UpdateProfilePayload } from "@/types";
+import { Modal } from "@/components/ui/Modal";
 
 const ROLE_LABELS: Record<string, string> = {
   MainAdmin: "Головний адмін",
@@ -173,153 +174,136 @@ export const Navbar: React.FC = () => {
       </nav>
 
       {/* Login modal */}
-      {showLogin && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-slate-900 text-white p-6 relative">
-              <button
-                onClick={() => setShowLogin(false)}
-                className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-2xl font-bold mb-1">Авторизація</h2>
-              <p className="text-slate-400 text-sm">Вхід до системи для співробітників</p>
+      <Modal
+        isOpen={showLogin}
+        title="Авторизація"
+        subtitle="Вхід до системи для співробітників"
+        onClose={() => setShowLogin(false)}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleLoginSubmit} className="space-y-5">
+          {loginError && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {loginError}
             </div>
-            <form onSubmit={handleLoginSubmit} className="p-6 space-y-5">
-              {loginError && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" /> {loginError}
-                </div>
-              )}
+          )}
+          <div>
+            <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input
+              id="login-email"
+              required
+              type="email"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              placeholder="admin@farro.ua"
+            />
+          </div>
+          <div>
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">Пароль</label>
+            <input
+              id="login-password"
+              required
+              type="password"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+            >
+              {isLoggingIn && <Loader2 className="w-4 h-4 animate-spin" />}
+              Увійти до панелі
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Profile settings modal */}
+      <Modal
+        isOpen={showProfile}
+        title="Профіль"
+        subtitle="Редагування особистих даних"
+        onClose={() => setShowProfile(false)}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleSave} className="space-y-4">
+          {profileError && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {profileError}
+            </div>
+          )}
+          {profileSuccess && (
+            <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 shrink-0" /> Збережено успішно!
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Повне ім&apos;я</label>
+            <input
+              required
+              type="text"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input
+              required
+              type="email"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <p className="text-xs text-slate-400 mb-3">Залиште порожнім, якщо не змінюєте пароль</p>
+            <div className="space-y-3">
               <div>
-                <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Поточний пароль</label>
                 <input
-                  id="login-email"
-                  required
-                  type="email"
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="admin@farro.ua"
-                />
-              </div>
-              <div>
-                <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">Пароль</label>
-                <input
-                  id="login-password"
-                  required
                   type="password"
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+                  value={form.currentPassword}
+                  onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
                   placeholder="••••••••"
                 />
               </div>
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
-                >
-                  {isLoggingIn && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Увійти до панелі
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Новий пароль</label>
+                <input
+                  type="password"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+                  value={form.newPassword}
+                  onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                  placeholder="••••••••"
+                />
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Profile settings modal */}
-      {showProfile && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-slate-900 text-white p-6 relative">
-              <button
-                onClick={() => setShowProfile(false)}
-                className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-2xl font-bold mb-1">Профіль</h2>
-              <p className="text-slate-400 text-sm">Редагування особистих даних</p>
             </div>
-
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              {profileError && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" /> {profileError}
-                </div>
-              )}
-              {profileSuccess && (
-                <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 shrink-0" /> Збережено успішно!
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Повне ім&apos;я</label>
-                <input
-                  required
-                  type="text"
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
-                  value={form.fullName}
-                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input
-                  required
-                  type="email"
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <p className="text-xs text-slate-400 mb-3">Залиште порожнім, якщо не змінюєте пароль</p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Поточний пароль</label>
-                    <input
-                      type="password"
-                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
-                      value={form.currentPassword}
-                      onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Новий пароль</label>
-                    <input
-                      type="password"
-                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
-                      value={form.newPassword}
-                      onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
-                >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Зберегти
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Зберегти
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 };

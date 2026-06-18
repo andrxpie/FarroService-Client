@@ -69,13 +69,12 @@ export default function BookingsPage() {
         onAction={handleAction}
         onDelete={isAdmin ? setDeleteId : undefined}
       />
-      {deleteId && (
-        <ConfirmModal
-          message="Видалити це скасоване бронювання? Дію неможливо скасувати."
-          onConfirm={() => { doDelete(deleteId); setDeleteId(null); }}
-          onCancel={() => setDeleteId(null)}
-        />
-      )}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        message="Видалити це скасоване бронювання? Дію неможливо скасувати."
+        onConfirm={() => { doDelete(deleteId!); setDeleteId(null); }}
+        onCancel={() => setDeleteId(null)}
+      />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );

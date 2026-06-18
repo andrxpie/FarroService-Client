@@ -32,7 +32,31 @@ const numOrNull = (val: string): number | null => {
   return val.trim() === "" || isNaN(n) ? null : n;
 };
 
+const pill = (active: boolean) =>
+  `px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+    active
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-slate-600 border-slate-300 hover:border-blue-400 hover:text-blue-600"
+  }`;
+
+const rangeInput =
+  "w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
+
+const STATUS_OPTIONS = [
+  { value: "all" as const, label: "Всі" },
+  { value: "active" as const, label: "Активні" },
+  { value: "inactive" as const, label: "Неактивні" },
+];
+
 export const ServicesFilters: React.FC<ServicesFiltersProps> = ({ specializations, filters, onChange }) => {
+  const hasActive =
+    filters.specializationIds.length > 0 ||
+    filters.status !== "all" ||
+    filters.minDuration !== null ||
+    filters.maxDuration !== null ||
+    filters.minPrice !== null ||
+    filters.maxPrice !== null;
+
   const toggleSpec = (id: string) => {
     const next = filters.specializationIds.includes(id)
       ? filters.specializationIds.filter((s) => s !== id)
@@ -40,111 +64,77 @@ export const ServicesFilters: React.FC<ServicesFiltersProps> = ({ specialization
     onChange({ ...filters, specializationIds: next });
   };
 
-  const hasActive =
-    filters.specializationIds.length > 0 ||
-    filters.minDuration !== null ||
-    filters.maxDuration !== null ||
-    filters.minPrice !== null ||
-    filters.maxPrice !== null ||
-    filters.status !== "all";
-
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-700">Фільтри</span>
-        {hasActive && (
-          <button
-            onClick={() => onChange(DEFAULT_SERVICE_FILTERS)}
-            className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
-          >
-            Скинути
-          </button>
-        )}
-      </div>
+    <div className="space-y-5">
+      {specializations.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Спеціалізація</p>
+          <div className="flex flex-wrap gap-2">
+            {specializations.map((sp) => (
+              <button key={sp.id} type="button" onClick={() => toggleSpec(sp.id)} className={pill(filters.specializationIds.includes(sp.id))}>
+                {sp.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Спеціалізація</p>
-        <div className="space-y-1.5">
-          {specializations.map((sp) => (
-            <label key={sp.id} className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={filters.specializationIds.includes(sp.id)}
-                onChange={() => toggleSpec(sp.id)}
-                className="w-3.5 h-3.5 rounded accent-blue-600"
-              />
-              <span className="text-xs text-slate-700 group-hover:text-slate-900 truncate">{sp.name}</span>
-            </label>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Статус</p>
+        <div className="flex flex-wrap gap-2">
+          {STATUS_OPTIONS.map(({ value, label }) => (
+            <button key={value} type="button" onClick={() => onChange({ ...filters, status: value })} className={pill(filters.status === value)}>
+              {label}
+            </button>
           ))}
-          {specializations.length === 0 && <p className="text-xs text-slate-400">—</p>}
         </div>
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Тривалість (хв)</p>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Тривалість (хв)</p>
         <div className="flex items-center gap-2">
           <input
-            type="number"
-            min={0}
-            placeholder="від"
+            type="number" min={0} placeholder="від"
             value={filters.minDuration ?? ""}
             onChange={(e) => onChange({ ...filters, minDuration: numOrNull(e.target.value) })}
-            className="w-full border border-slate-200 rounded-md p-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={rangeInput}
           />
-          <span className="text-slate-400 text-xs">—</span>
+          <span className="text-slate-400 text-sm flex-shrink-0">—</span>
           <input
-            type="number"
-            min={0}
-            placeholder="до"
+            type="number" min={0} placeholder="до"
             value={filters.maxDuration ?? ""}
             onChange={(e) => onChange({ ...filters, maxDuration: numOrNull(e.target.value) })}
-            className="w-full border border-slate-200 rounded-md p-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={rangeInput}
           />
         </div>
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Ціна (грн)</p>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Ціна (грн)</p>
         <div className="flex items-center gap-2">
           <input
-            type="number"
-            min={0}
-            placeholder="від"
+            type="number" min={0} placeholder="від"
             value={filters.minPrice ?? ""}
             onChange={(e) => onChange({ ...filters, minPrice: numOrNull(e.target.value) })}
-            className="w-full border border-slate-200 rounded-md p-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={rangeInput}
           />
-          <span className="text-slate-400 text-xs">—</span>
+          <span className="text-slate-400 text-sm flex-shrink-0">—</span>
           <input
-            type="number"
-            min={0}
-            placeholder="до"
+            type="number" min={0} placeholder="до"
             value={filters.maxPrice ?? ""}
             onChange={(e) => onChange({ ...filters, maxPrice: numOrNull(e.target.value) })}
-            className="w-full border border-slate-200 rounded-md p-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={rangeInput}
           />
         </div>
       </div>
 
-      <div>
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Статус</p>
-        <div className="space-y-1.5">
-          {(["all", "active", "inactive"] as const).map((v) => (
-            <label key={v} className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="service-status"
-                checked={filters.status === v}
-                onChange={() => onChange({ ...filters, status: v })}
-                className="w-3.5 h-3.5 accent-blue-600"
-              />
-              <span className="text-xs text-slate-700 group-hover:text-slate-900">
-                {v === "all" ? "Всі" : v === "active" ? "Активні" : "Неактивні"}
-              </span>
-            </label>
-          ))}
+      {hasActive && (
+        <div className="pt-2 border-t border-slate-100">
+          <button onClick={() => onChange(DEFAULT_SERVICE_FILTERS)} className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+            Скинути фільтри
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
