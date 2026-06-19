@@ -117,11 +117,11 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
                 <tr>
                   {showId && <th className="px-6 py-4">ID</th>}
                   <th className="px-6 py-4">Клієнт / Телефон</th>
-                  <th className="px-6 py-4">Послуга / Майстер</th>
+                  <th className="px-6 py-4">{showId && " / Майстер"}Послуга</th>
                   <th className="px-6 py-4">Дата і Час</th>
                   <th className="px-6 py-4">Адреса</th>
                   <th className="px-6 py-4">Статус</th>
-                  <th className="px-6 py-4 text-right">Дії</th>
+                  {showId && <th className="px-6 py-4 text-right">Дії</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -134,7 +134,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs font-medium text-slate-900">{b.serviceTitle}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{b.masterFullName}</div>
+                      {showId && <div className="text-xs text-slate-400 mt-0.5">{b.masterFullName}</div>}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
