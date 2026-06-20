@@ -117,7 +117,7 @@ export const BookingsTable: React.FC<BookingsTableProps> = ({ bookings, onAction
                 <tr>
                   {showId && <th className="px-6 py-4">ID</th>}
                   <th className="px-6 py-4">Клієнт / Телефон</th>
-                  <th className="px-6 py-4">{showId && " / Майстер"}Послуга</th>
+                  <th className="px-6 py-4">Послуга{showId && " / Майстер"}</th>
                   <th className="px-6 py-4">Дата і Час</th>
                   <th className="px-6 py-4">Адреса</th>
                   <th className="px-6 py-4">Статус</th>
