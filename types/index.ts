@@ -54,7 +54,8 @@ export interface UpdateBookingPayload {
 
 export interface CreateBookingPayload {
   serviceId: string;
-  masterId: string;
+  /** Omitted in "any free master" mode — the server assigns the first free qualified master. */
+  masterId?: string;
   date: string;
   startTime: string;
   clientName: string;

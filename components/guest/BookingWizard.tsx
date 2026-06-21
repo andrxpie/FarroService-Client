@@ -31,10 +31,16 @@ const inputNormal = `${inputBase} border-slate-300 focus:ring-blue-500`;
 const inputInvalid = `${inputBase} border-red-400 focus:ring-red-300`;
 
 export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, onComplete }) => {
+  const todayLocal = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
   const [step, setStep] = useState<number>(1);
-  const [date, setDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState<string>(todayLocal);
   const [time, setTime] = useState<string>("");
   const [masterId, setMasterId] = useState<string | null>(null);
+  const [anyMaster, setAnyMaster] = useState<boolean>(true);
 
   const [masters, setMasters] = useState<Master[]>([]);
   const [mastersLoading, setMastersLoading] = useState(true);
@@ -45,7 +51,6 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
   const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
   const [formErrors, setFormErrors] = useState<{ name?: string; phone?: string; address?: string }>({});
 
-  // Address autocomplete state
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -65,7 +70,11 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
   }, [service.specializationId]);
 
   useEffect(() => {
-    if (masterId === null || !date) return;
+    if (!date) return;
+    if (!anyMaster && masterId === null) {
+      setSlots([]);
+      return;
+    }
 
     let cancelled = false;
 
@@ -76,8 +85,12 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
       setSlotsLoading(true);
       setTime("");
 
+      const url = anyMaster
+        ? `/api/schedule/slots/any?serviceId=${service.id}&date=${date}`
+        : `/api/schedule/slots?masterId=${masterId}&serviceId=${service.id}&date=${date}`;
+
       try {
-        const data = await apiClient<TimeSlot[]>(`/api/schedule/slots?masterId=${masterId}&serviceId=${service.id}&date=${date}`);
+        const data = await apiClient<TimeSlot[]>(url);
         if (!cancelled) setSlots(data.filter((s) => s.isAvailable));
       } catch {
         if (!cancelled) setSlots([]);
@@ -89,9 +102,8 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
     return () => {
       cancelled = true;
     };
-  }, [masterId, date, service.id]);
+  }, [anyMaster, masterId, date, service.id]);
 
-  // Debounced Google Maps address autocomplete
   useEffect(() => {
     const query = formData.address.trim();
 
@@ -127,7 +139,6 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
     return () => clearTimeout(timer);
   }, [formData.address]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (addressWrapperRef.current && !addressWrapperRef.current.contains(e.target as Node)) {
@@ -163,13 +174,22 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
     return Object.keys(errs).length === 0;
   };
 
+  const handleModeChange = (any: boolean) => {
+    if (any === anyMaster) return;
+    setAnyMaster(any);
+    setMasterId(null);
+    setTime("");
+    setSlots([]);
+  };
+
   const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (masterId === null || !time) return;
+    if (!time) return;
+    if (!anyMaster && masterId === null) return;
     if (!validateStep2()) return;
     onComplete({
       serviceId: service.id,
-      masterId,
+      masterId: anyMaster ? undefined : masterId!,
       date,
       startTime: time,
       clientName: formData.name,
@@ -183,7 +203,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
   const selectedMaster = masters.find((m) => m.id === masterId);
 
   const renderSlots = () => {
-    if (masterId === null) {
+    if (!anyMaster && masterId === null) {
       return (
         <div className="p-4 bg-slate-50 rounded-lg text-slate-500 text-sm text-center border border-dashed border-slate-300">
           Спочатку оберіть майстра
@@ -266,37 +286,66 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Оберіть майстра</p>
-                {mastersLoading ? (
-                  <div className="flex items-center gap-2 text-slate-400 text-sm p-4">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Завантаження майстрів...
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {masters.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setMasterId(m.id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 text-left w-full ${
-                          masterId === m.id ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500" : "border-slate-200 hover:border-blue-300 bg-white"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
-                          {m.fullName
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm text-slate-900">{m.fullName}</div>
-                          <div className="text-xs text-slate-500">{m.specializations.map((s) => s.name).join(", ") || "Майстер"}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                <p className="text-sm font-medium text-slate-700 mb-2">Призначення майстра</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange(true)}
+                    className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                      anyMaster ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Будь-який вільний майстер
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange(false)}
+                    className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                      !anyMaster ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Обрати майстра
+                  </button>
+                </div>
+                {anyMaster && (
+                  <p className="text-xs text-slate-500 mt-2">Система автоматично призначить першого вільного кваліфікованого майстра на обраний час.</p>
                 )}
               </div>
+
+              {!anyMaster && (
+                <div>
+                  <p className="text-sm font-medium text-slate-700 mb-2">Оберіть майстра</p>
+                  {mastersLoading ? (
+                    <div className="flex items-center gap-2 text-slate-400 text-sm p-4">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Завантаження майстрів...
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {masters.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setMasterId(m.id)}
+                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 text-left w-full ${
+                            masterId === m.id ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500" : "border-slate-200 hover:border-blue-300 bg-white"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
+                            {m.fullName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-slate-900">{m.fullName}</div>
+                            <div className="text-xs text-slate-500">{m.specializations.map((s) => s.name).join(", ") || "Майстер"}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label htmlFor="booking-date" className="block text-sm font-medium text-slate-700 mb-2">
@@ -306,8 +355,11 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
                   id="booking-date"
                   type="date"
                   value={date}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setDate(e.target.value)}
+                  min={todayLocal}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDate(!val || val < todayLocal ? todayLocal : val);
+                  }}
                   className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-slate-900 bg-white"
                 />
               </div>
@@ -320,7 +372,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
               <div className="pt-4 flex justify-end">
                 <button
                   type="button"
-                  disabled={!time || masterId === null}
+                  disabled={!time || (!anyMaster && masterId === null)}
                   onClick={() => setStep(2)}
                   className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                 >
@@ -338,7 +390,9 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({ service, onBack, o
                   <span className="font-bold">
                     {date}, о {time.slice(0, 5)}
                   </span>
-                  <span className="opacity-80">Майстер: {selectedMaster?.fullName}</span>
+                  <span className="opacity-80">
+                    Майстер: {anyMaster ? "будь-який вільний (призначається автоматично)" : selectedMaster?.fullName}
+                  </span>
                 </div>
               </div>
 

@@ -49,7 +49,7 @@ export default function HomePage() {
           clientName: data.clientName,
           phone: data.phone,
           serviceId: data.serviceId,
-          masterId: data.masterId,
+          masterId: data.masterId ?? null,
           date: data.date,
           startTime: data.startTime,
           address: data.address,
